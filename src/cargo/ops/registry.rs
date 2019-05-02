@@ -418,6 +418,21 @@ pub fn needs_custom_http_transport(config: &Config) -> CargoResult<bool> {
 pub fn configure_http_handle(config: &Config, handle: &mut Easy) -> CargoResult<HttpTimeout> {
     if let Some(proxy) = http_proxy(config)? {
         handle.proxy(&proxy)?;
+        let mut auth = Auth::new();
+        if let Some(proxy_auth) = config.get_string("http.proxy-auth")? {
+            match proxy_auth {
+                "Basic" => auth::basic(true);
+                "Negotiate" => auth::negotiate(true);
+                _ =>;
+            }
+        }
+        handle.proxy_auth(proxy_auth);
+        if let Some(proxy_username) = config.get_string("http.proxy-username")? {
+            handle.proxy_username(proxy_username);
+        }
+        if let Some(proxy_password) = config.get_string("http.proxy-password")? {
+            handle.password(proxy_password);
+        }        
     }
     if let Some(cainfo) = config.get_path("http.cainfo")? {
         handle.cainfo(&cainfo.val)?;
